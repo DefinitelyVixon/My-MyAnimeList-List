@@ -1,9 +1,14 @@
-from utils.mal import MyAnimeListManager
+from utils.mal import MyAnimeListAPIHandler
 from utils.auth import AuthManager
 from dotenv import load_dotenv
 
 
 if __name__ == '__main__':
     load_dotenv()
-    auth_manager = AuthManager()
-    mal_user = MyAnimeListManager(authenticator=auth_manager)
+    auth = AuthManager.init_with_tokens(fp='tokens.json')
+    mal = MyAnimeListAPIHandler(authenticator=auth)
+    mal.get_user_anime_list(user_name='Vixon',
+                            status='completed',
+                            fields='list_status',
+                            limit=1,
+                            sort='list_score')
