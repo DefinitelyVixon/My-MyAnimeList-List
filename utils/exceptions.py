@@ -14,13 +14,22 @@ class MissingTokensException(Exception):
                          'Please create an AuthManager object and pass it as a parameter to MALUser object...')
 
 
+class MissingAuthenticatorException(Exception):
+    def __init__(self):
+        super().__init__('MyAnimeList API requires OAuth 2.0 as it is stated in '
+                         'https://myanimelist.net/apiconfig/references/authorization. '
+                         'The AuthManager class from utils.auth package follows the authorization steps from this '
+                         'documentation and used as the authenticator. Please create an AuthManager object and pass it '
+                         'to the API Handler.')
+
 # endregion
+
 
 # region Invalid Element Exceptions
 class InvalidAnimeStatusException(Exception):
     def __init__(self, variable):
         super().__init__(f'"{variable}" is not a valid anime status. '
-                         f'Please provide an available status from: {Static.LIST_STATUSES}')
+                         f'Please provide an available status from: {Static.ANIME_LIST_STATUSES}')
 
 
 class InvalidQueryFieldException(Exception):
@@ -32,7 +41,7 @@ class InvalidQueryFieldException(Exception):
 class InvalidSortOptionException(Exception):
     def __init__(self, variable):
         super().__init__(f'"{variable}" s not a valid sort option. '
-                         f'Please provide an available option from: {Static.ANIME_SORT_OPTIONS}')
+                         f'Please provide an available option from: {Static.QUERY_SORT_OPTIONS}')
 
 
 # endregion
