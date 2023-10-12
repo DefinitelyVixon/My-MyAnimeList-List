@@ -4,44 +4,90 @@ import secrets
 import json
 from time import sleep
 from os import getenv
-from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from dataclasses import dataclass
+from .exceptions import *
 
-from .exceptions import MissingTokensException, MissingConfigurationException, MissingRedirectUriWarning
 
-
+@dataclass
 class AuthManager:
+    client_id: str = None
+    client_secret: str = None
+    mal_username: str = None
+    mal_password: str = None
+    redirect_uri: str = None
+    access_token: str = None
+    refresh_token: str = None
 
-    def __init__(self, tokens_fp=None,
-                 client_id=None, client_secret=None, redirect_uri=None, mal_username=None, mal_password=None):
-        # Create a pseudo-AuthManager object using access_token and fresh_token
-        if tokens_fp is not None:
-            self.access_token, self.refresh_token = AuthManager.fetch_tokens(fp=tokens_fp)
-        # Create fresh AuthManager object with given parameters
-        else:
-            self.client_id = client_id or getenv('CLIENT_ID')
-            if self.client_id is None:
-                raise MissingConfigurationException(client_id)
+    @staticmethod
+    def init_with_credentials(client_id, client_secret, mal_username, mal_password, redirect_uri=None):
+        """
+        Initialize an authenticator with MyAnimeList API and user credentials.
+        The application needs to be published on https://myanimelist.net/apiconfig and have a client_secret.
 
-            self.client_secret = client_secret or getenv('CLIENT_SECRET')
-            if self.client_secret is None:
-                raise MissingConfigurationException(client_secret)
+        Parameters
+        ----------
+        client_id : str
+            Client ID of the app.
+        client_secret : str
+            Client secret of the app.
+        mal_username : str
+            MyAnimeList username of the app owner.
+        mal_password : str
+            MyAnimeList password of the app owner.
+        redirect_uri : str
+            (optional) Redirect uri to be used in client authentication. Not using this parameter is highly advised.
 
-            self.mal_username = mal_username or getenv('MAL_USERNAME')
-            if self.mal_username is None:
-                raise MissingConfigurationException(mal_username)
+        Returns
+        -------
+        authenticator : AuthManager
+            Authenticator object
+        """
+        auth = AuthManager()
 
-            self.mal_password = mal_password or getenv('MAL_PASSWORD')
-            if self.mal_password is None:
-                raise MissingConfigurationException(mal_password)
+        auth.client_id = client_id or getenv('CLIENT_ID')
+        if auth.client_id is None:
+            raise MissingConfigurationException('client_id')
 
-            self.redirect_uri = redirect_uri
-            if self.redirect_uri is None:
-                MissingRedirectUriWarning()
+        auth.client_secret = client_secret or getenv('CLIENT_SECRET')
+        if auth.client_secret is None:
+            raise MissingConfigurationException('client_secret')
 
-            self.access_token, self.refresh_token = self.request_oauth_2(response_type='code',
-                                                                         code_challenge_method='plain')
+        auth.mal_username = mal_username or getenv('MAL_USERNAME')
+        if auth.mal_username is None:
+            raise MissingConfigurationException('mal_username')
+
+        auth.mal_password = mal_password or getenv('MAL_PASSWORD')
+        if auth.mal_password is None:
+            raise MissingConfigurationException('mal_password')
+
+        auth.redirect_uri = redirect_uri
+        if auth.redirect_uri is None:
+            MissingRedirectUriWarning()
+
+        auth.access_token, auth.refresh_token = auth.request_oauth_2(response_type='code',
+                                                                     code_challenge_method='plain')
+        return auth
+
+    @staticmethod
+    def init_with_tokens(fp):
+        """
+        Initialize a partial-authenticator object that holds "access_token" and "refresh_token" from a JSON file.
+
+        Parameters
+        ----------
+        fp : str
+            File path to json file that holds the 'access_token' and 'refresh_token' values.
+
+        Returns
+        -------
+        authenticator : AuthManager
+            Authenticator object that holds the access and refresh tokens.
+        """
+        auth = AuthManager()
+        auth.access_token, auth.refresh_token = AuthManager.fetch_tokens(fp=fp)
+        return auth
 
     def request_oauth_2(self, response_type, code_challenge_method):
         code_verifier, code_challenge = pkce.generate_pkce_pair()
@@ -138,8 +184,3 @@ class AuthManager:
     @staticmethod
     def query_params_to_str(param_dict):
         return '?' + '&'.join(f'{k}={v}' for k, v in param_dict.items())
-
-
-if __name__ == '__main__':
-    load_dotenv('../.env')
-    am = AuthManager()
