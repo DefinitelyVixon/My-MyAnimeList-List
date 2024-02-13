@@ -108,7 +108,6 @@ class AuthManager:
                                                                 code_verifier=code_challenge)
         return access_token, refresh_token
 
-    # Step 1: Get Authentication Code
     def get_auth_code(self, driver: webdriver.Chrome, response_type, state, code_challenge, code_challenge_method):
         params = {
             'response_type': response_type,
@@ -157,6 +156,7 @@ class AuthManager:
     def save_tokens(self, fp='tokens.json'):
         with open(fp, mode='w', encoding='utf8') as out_file:
             json.dump({'access_token': self.access_token, 'refresh_token': self.refresh_token}, out_file)
+            print('Saved user tokens to', out_file.name)
 
     def refresh_user_tokens(self):
         params = {
